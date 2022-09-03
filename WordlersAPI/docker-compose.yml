@@ -1,0 +1,41 @@
+version: "3"
+services:
+  db:
+    image: postgres
+    container_name: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: wordlersgame
+    volumes:
+      - "/var/lib/postgresql/data:/var/lib/postgresql/data"
+    networks:
+      - wordlersgame
+  cache:
+    container_name: redis
+    image: redis:latest
+    restart: always
+    networks:
+      - wordlersgame
+    ports:
+     - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --requirepass redisuser@123
+  RabbitMq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - wordlersgame
+
+networks:
+  wordlersgame:
+    driver: "bridge"
+    name: "wordlersgame"

@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using WordlersAPI.Data;
 using WordlersAPI.Interfaces;
 using WordlersAPI.Services;
 
@@ -10,7 +12,11 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddDbContext<GameDbContext>(option => option.UseNpgsql
+               (builder.Configuration.GetConnectionString("DefaultConnection")));
+
 builder.Services.AddScoped<IWordEngineService, WordEngineService>();
+builder.Services.AddScoped<IGameService, GameService>();
 
 var app = builder.Build();
 

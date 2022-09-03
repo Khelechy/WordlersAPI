@@ -25,6 +25,14 @@ namespace WordlersAPI.Controllers
             return Ok(word);
         }
 
+        [Route("shuffle/generate")]
+        [HttpGet]
+        public IActionResult GenerateShuffledWord([FromQuery] int wordLength)
+        {
+            string word = _wordEngineService.GenerateShuffledWord(wordLength);
+            return Ok(word);
+        }
+
         [Route("validate")]
         [HttpGet]
         public IActionResult ValidateWord([FromQuery] string word)

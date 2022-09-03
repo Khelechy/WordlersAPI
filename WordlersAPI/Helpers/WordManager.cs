@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+using System;
 
 namespace WordlersAPI.Helpers
 {
@@ -22,6 +23,12 @@ namespace WordlersAPI.Helpers
             JArray wordArray = JArray.Parse(dictionaryFile);
             bool isValid = wordArray.Any(x => x.Value<string>() == word);
             return isValid;
+        }
+
+
+        public static string Shuffle(this string input){
+            Random r = new Random();
+            return new string(input.ToCharArray().OrderBy(s => (r.Next(2) % 2) == 0).ToArray());   
         }
     }
 }

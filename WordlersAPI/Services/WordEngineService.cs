@@ -13,6 +13,12 @@ namespace WordlersAPI.Services
             _webHostingEnvironment = webHostingEnvironment;
         }
 
+        public string GenerateShuffledWord(int wordLength)
+        {
+            string word = GenerateWord(wordLength);
+            return word.Shuffle();
+        }
+
         public string GenerateWord(int wordLength)
         {
             string word = WordManager.GenerateWord(wordLength, _webHostingEnvironment.ContentRootPath); 
