@@ -17,6 +17,8 @@ builder.Services.AddDbContext<GameDbContext>(option => option.UseNpgsql
 
 builder.Services.AddScoped<IWordEngineService, WordEngineService>();
 builder.Services.AddScoped<IGameService, GameService>();
+builder.Services.AddScoped<IRabbitMQService, RabbitMQProducerService>();
+builder.Services.AddHostedService<RabbitMQConsumerService>();
 
 var app = builder.Build();
 

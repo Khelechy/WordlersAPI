@@ -23,5 +23,19 @@ namespace WordlersAPI.Controllers
             var game = await gameService.CreateGame(createGameRequestModel);    
             return Ok(game);
         }
+
+        [HttpGet("id")]
+        public async Task<IActionResult> GetGame(int id)
+        {
+            var game = await gameService.GetGame(id);
+            return Ok(game);
+        }
+
+        [HttpGet("start/{id}")]
+        public async Task<IActionResult> StartGame(int id)
+        {
+            var game = await gameService.StartGameRound(id);
+            return Ok(game);
+        }
     }
 }

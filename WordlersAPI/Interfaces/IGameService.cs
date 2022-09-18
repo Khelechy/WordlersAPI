@@ -5,7 +5,10 @@ namespace WordlersAPI.Interfaces
 {
     public interface IGameService
     {
+        Task<Game> GetGame(int gameId);
         Task<Game> CreateGame(CreateGameRequestModel createGameRequest);
-        Task<Game> StartGame(int gameId);
+        Task TimeGameRound(int gameId, int roundDuration);
+        Task<Game> StartGameRound(int gameId);
+        Task StopGameRound(int gameId); 
     }
 }
