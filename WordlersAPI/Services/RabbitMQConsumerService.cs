@@ -4,6 +4,7 @@ using RabbitMQ.Client.Events;
 using System.Text;
 using WordlersAPI.Interfaces;
 using WordlersAPI.Models.Constants;
+using WordlersAPI.Models.Core;
 using WordlersAPI.Models.DataModel;
 
 namespace WordlersAPI.Services
@@ -51,7 +52,9 @@ namespace WordlersAPI.Services
             {
                 await ConsumeStartGameTopic(Constant.StartGameRoundTopic);
                 await ConsumeStopGameTopic(Constant.StopGameRoundTopic);
-                
+                await ConsumeUserGamePoint(Constant.StoreUserGamePoint);    
+
+
             }
             catch (Exception ex)
             {
@@ -132,6 +135,47 @@ namespace WordlersAPI.Services
                 catch (Exception ex)
                 {
                     logger.LogError($"Error from consuming stop game topic : {ex.Message} ");
+                }
+            };
+            channel.BasicConsume(topic, autoAck: false, consumer);
+            logger.LogInformation($".. Listening for messages on {topic} topic ");
+
+        }
+
+
+        //User Game Point Consumers
+        private async Task ConsumeUserGamePoint(string topic)
+        {
+
+            channel.QueueDeclare(topic, durable: true, exclusive: false, autoDelete: false, arguments: null);
+            var consumer = new EventingBasicConsumer(channel);
+            consumer.Received += async (model, ea) =>
+            {
+                try
+                {
+                    var body = ea.Body.ToArray();
+                    var message = Encoding.UTF8.GetString(body);
+
+                    logger.LogInformation($"Receieved message on store user game point topic ");
+
+                    if (String.IsNullOrEmpty(message))
+                    {
+                        logger.LogInformation("Received empty message body");
+                        return;
+                    }
+
+                    var response = JsonConvert.DeserializeObject<UserGamePoint>(message);
+                    using (var scope = _serviceProvider.CreateScope())
+                    {
+                        var userGamePointService = scope.ServiceProvider.GetService<IUserGamePointService>();
+                        await userGamePointService.AddGamePoint(response);
+                    }
+
+                    channel.BasicAck(ea.DeliveryTag, false);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError($"Error from consuming store user game point topic : {ex.Message} ");
                 }
             };
             channel.BasicConsume(topic, autoAck: false, consumer);

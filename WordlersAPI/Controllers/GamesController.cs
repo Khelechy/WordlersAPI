@@ -37,5 +37,26 @@ namespace WordlersAPI.Controllers
             var game = await gameService.StartGameRound(id);
             return Ok(game);
         }
+
+        [HttpGet("game/store/add")]
+        public async Task<IActionResult> AddToStore([FromQuery] string word)
+        {
+            var isAdded = await gameService.AddStore(word);
+            return Ok(isAdded);
+        }
+
+        [HttpGet("game/store/contains")]
+        public async Task<IActionResult> CheckStore([FromQuery] string word)
+        {
+            var isAdded = await gameService.TestStore(word);
+            return Ok(isAdded);
+        }
+
+        [HttpPost("game/store/delete")]
+        public async Task<IActionResult> Delete()
+        {
+            await gameService.DeleteStore();
+            return Ok();
+        }
     }
 }

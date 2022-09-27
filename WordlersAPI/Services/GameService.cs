@@ -7,21 +7,27 @@ using WordlersAPI.Models.Core;
 using WordlersAPI.Models.DataModel;
 using WordlersAPI.Models.Request;
 using System.Timers;
+using WordlersAPI.Helpers;
 
 namespace WordlersAPI.Services
 {
     public class GameService : IGameService
     {
         private readonly ILogger<GameService> logger;
+        private readonly ICacheService cacheService;
         private readonly GameDbContext context;
         private readonly IRabbitMQService rabbitMQService;
+        private readonly IWordEngineService wordEngineService;
 
-        public GameService(GameDbContext context, ILogger<GameService> logger, IRabbitMQService rabbitMQService)
+        public GameService(GameDbContext context, ILogger<GameService> logger, IRabbitMQService rabbitMQService, IWordEngineService wordEngineService, ICacheService cacheService)
         {
             this.logger = logger;
+            this.cacheService = cacheService;
             this.context = context;
             this.rabbitMQService = rabbitMQService;
-            
+            this.wordEngineService = wordEngineService;
+
+
         }
         public async Task<Game> CreateGame(CreateGameRequestModel createGameRequest)
         {
@@ -84,6 +90,76 @@ namespace WordlersAPI.Services
                 await rabbitMQService.ProduceMessage(Constant.StopGameRoundTopic, jsonMessage);
             };
             timer.Start();
+        }
+
+        public async Task UserGameInput(UserGameInputModel userGameInputModel)
+        {
+           
+
+            //validate anagram
+            var anagramRequest = new CheckAnagramRequestModel
+            {
+                OriginalWord = userGameInputModel.OriginalWord, 
+                NewWord = userGameInputModel.UserWord
+            };
+
+            var isAnagram = wordEngineService.ValidateAnagram(anagramRequest);
+            if(!isAnagram)
+            {
+                //ignore
+                return;
+            }
+
+            //validate word
+            var isValidWord = wordEngineService.ValidateWord(anagramRequest.NewWord);
+            if (!isValidWord)
+            {
+                //ignore or prompt is not a valid word
+                return;
+            }
+
+            //Check other users has not sent in word
+            var isExist = await cacheService.IsStoreContains(Constant.GameStoreName + userGameInputModel.GameId.ToString(), anagramRequest.NewWord);
+            if (isExist)
+            {
+                //Ignore or prompt has already been sent
+                return;
+            }
+            else
+            {
+                await cacheService.AddToStore(Constant.GameStoreName + userGameInputModel.GameId.ToString(), anagramRequest.NewWord);
+            }
+
+
+            //generate point
+            int point = PointGrader.AwardPoint(anagramRequest.NewWord);
+
+            //save point
+            var userGamePointMessage = new UserGamePoint
+            {
+                GameId = userGameInputModel.GameId,
+                UserId = userGameInputModel.UserId,
+                Point = point
+            };
+            var jsonMessage = JsonConvert.SerializeObject(userGamePointMessage);
+            await rabbitMQService.ProduceMessage(Constant.StoreUserGamePoint, jsonMessage);
+
+            //New Pipeline, return success message (username: you have got 2 for the word "word")
+        }
+
+        public async Task<bool> TestStore(string word)
+        {
+            return await cacheService.IsStoreContains("testkey", word);
+        }
+
+        public async Task<bool> AddStore(string word)
+        {
+            return await cacheService.AddToStore("testkey", word);
+        }
+
+        public async Task DeleteStore()
+        {
+            await cacheService.ClearStore("testkey");
         }
     }
 }

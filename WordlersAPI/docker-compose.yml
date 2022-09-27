@@ -22,7 +22,7 @@ services:
       - wordlersgame
     ports:
      - '6379:6379'
-    command: redis-server --save 20 1 --loglevel warning --requirepass redisuser@123
+    command: redis-server --save 20 1 --loglevel warning
   RabbitMq:
     image: rabbitmq:3-management
     container_name: wordler_rabbitmq
