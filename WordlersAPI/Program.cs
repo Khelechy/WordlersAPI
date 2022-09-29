@@ -1,7 +1,10 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using WordlersAPI.Data;
 using WordlersAPI.Interfaces;
+using WordlersAPI.Models.Core;
+using WordlersAPI.Models.Helper;
 using WordlersAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,9 +16,35 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+//CORS
+builder.Services.AddCors(feature =>
+    feature.AddPolicy(
+        "CorsPolicy",
+        apiPolicy => apiPolicy
+            //.AllowAnyOrigin()
+            //.WithOrigins("http://localhost:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .SetIsOriginAllowed(host => true)
+            .AllowCredentials()
+));
+
 builder.Services.AddDbContext<GameDbContext>(option => option.UseNpgsql
                (builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddIdentity<User, IdentityRole>(options =>
+{
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequiredLength = 5;
+    options.User.RequireUniqueEmail = true;
+}).AddEntityFrameworkStores<GameDbContext>()
+                    .AddDefaultTokenProviders();
+
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+
+builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IWordEngineService, WordEngineService>();
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddScoped<IRabbitMQService, RabbitMQProducerService>();
@@ -50,6 +79,15 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+using (var scope = app.Services.CreateScope())
+{
+    AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    await ContextSeed.SeedRolesAsync(userManager, roleManager);
 }
 
 app.UseHttpsRedirection();
