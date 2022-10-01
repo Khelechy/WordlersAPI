@@ -50,6 +50,7 @@ namespace WordlersAPI.Services
         {
             try
             {
+                await ConsumeIncrementRoomUsersCountTopic(Constant.IncrementRoomUsersCount);
                 await ConsumeStartGameTopic(Constant.StartGameRoundTopic);
                 await ConsumeStopGameTopic(Constant.StopGameRoundTopic);
                 await ConsumeUserGamePoint(Constant.StoreUserGamePoint);    
@@ -60,6 +61,45 @@ namespace WordlersAPI.Services
             {
                 logger.LogError($"Rabbit MQ Consumer Error : {ex.Message}");
             }
+
+        }
+
+        private async Task ConsumeIncrementRoomUsersCountTopic(string topic)
+        {
+
+            channel.QueueDeclare(topic, durable: true, exclusive: false, autoDelete: false, arguments: null);
+            var consumer = new EventingBasicConsumer(channel);
+            consumer.Received += async (model, ea) =>
+            {
+                try
+                {
+                    var body = ea.Body.ToArray();
+                    var message = Encoding.UTF8.GetString(body);
+
+                    logger.LogInformation($"Receieved message on increment room users count topic ");
+
+                    if (String.IsNullOrEmpty(message))
+                    {
+                        logger.LogInformation("Received empty message body");
+                        return;
+                    }
+
+                    var response = JsonConvert.DeserializeObject<RoomBrokerModel>(message);
+                    using (var scope = _serviceProvider.CreateScope())
+                    {
+                        var roomService = scope.ServiceProvider.GetService<IRoomService>();
+                        await roomService.IncrementAndUpdateRoomUsersCount(response.RoomId);
+                    }
+
+                    channel.BasicAck(ea.DeliveryTag, false);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError($"Error from consuming increment room users count topic : {ex.Message} ");
+                }
+            };
+            channel.BasicConsume(topic, autoAck: false, consumer);
+            logger.LogInformation($".. Listening for messages on {topic} topic ");
 
         }
 

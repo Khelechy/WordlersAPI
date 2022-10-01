@@ -50,6 +50,7 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 
+builder.Services.AddScoped<IRoomService, RoomService>();    
 builder.Services.AddScoped<IGameHubService, GameHubService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IWordEngineService, WordEngineService>();

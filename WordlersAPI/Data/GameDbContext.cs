@@ -12,7 +12,8 @@ namespace WordlersAPI.Data
         }
 
         public new DbSet<User> Users { get; set; }
-        public DbSet<Game> Games { get; set; }  
+        public DbSet<Game> Games { get; set; }
+        public DbSet<Room> Rooms { get; set; }
         public DbSet<UserGamePoint> UserGamePoints { get; set; }
 
 
