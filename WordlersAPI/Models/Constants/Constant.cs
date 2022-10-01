@@ -10,7 +10,7 @@
         public const string GameStoreName = "GameStore_";
         public const string WordlerBotName = "WordlerBot";
 
-        public const int MaxRoomUsers = 2;
+        public const int MaxRoomUsers = 3;
         public const int BufferGameRoundTime = 10000;
         public const int BufferPoint = 2;
     }

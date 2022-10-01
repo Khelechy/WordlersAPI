@@ -13,6 +13,7 @@ namespace WordlersAPI.Models.Core
         public long Points { get; set; }
 
         public DateTimeOffset LastLoggedInAt { get; set; }
+        public DateTimeOffset LastPasswordChangedAt { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
     }
