@@ -7,6 +7,7 @@
         public const string StoreUserGamePoint = "store-user-game-point";
 
         public const string GameStoreName = "GameStore_";
+        public const string WordlerBotName = "WordlerBot";
 
         public const int BufferGameRoundTime = 10000;
         public const int BufferPoint = 2;

@@ -1,12 +1,16 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using WordlersAPI.Data;
 using WordlersAPI.Enums;
 using WordlersAPI.Interfaces;
 using WordlersAPI.Models.Core;
+using WordlersAPI.Models.Dto;
 using WordlersAPI.Models.Helper;
 using WordlersAPI.Models.Request;
 using WordlersAPI.Models.Response;
@@ -16,19 +20,25 @@ namespace WordlersAPI.Services
     public class AuthenticationService : IAuthenticationService
 	{
         private readonly UserManager<User> userManager;
-		private readonly JwtSettings _configuration;
+        private readonly GameDbContext context;
+        private readonly JwtSettings _configuration;
+		private readonly IMapper _mapper;
+
 
 		private readonly string _issuer;
 		private readonly string _audience;
 		private readonly string _securityKey;
 
-		public AuthenticationService(ILogger<AuthenticationService> logger, UserManager<User> userManager, IOptions<JwtSettings> configuration)
+		public AuthenticationService(ILogger<AuthenticationService> logger, GameDbContext context, UserManager<User> userManager, IOptions<JwtSettings> configuration,
+			 IMapper mapper)
         {
 			this.userManager = userManager;
+			this.context = context;
 			_configuration = configuration.Value;
 			_issuer = _configuration.Issuer;	
 			_audience = _configuration.Audience;
 			_securityKey = _configuration.SecretKey;
+			_mapper = mapper;
 
 		}
 
@@ -65,18 +75,30 @@ namespace WordlersAPI.Services
 
         public async Task<GeneralResponse<LoginResponseModel>> LoginAsync(LoginRequestModel requestModel)
         {
-			var user = await userManager.FindByEmailAsync(requestModel.Email);
+			var userByEmail = await userManager.FindByEmailAsync(requestModel.Email);
+			var userByUserName = await context.Users.FirstOrDefaultAsync(x => x.UserName.ToLower() == requestModel.Email.ToLower());
+			User user = new User();
 
-			if (user == null)
+			if (userByEmail == null && userByUserName == null)
 			{
 				return new GeneralResponse<LoginResponseModel>
 				{
-					Message = "There is no account exisiting with this email",
+					Message = "There is no account exisiting with this email or username",
 					IsSuccess = false
 				};
 			}
 
+			if(userByEmail != null)
+            {
+				user = userByEmail;
+            }
+            else
+            {
+				user = userByUserName;	
+            }
+
 			var result = await userManager.CheckPasswordAsync(user, requestModel.Password);
+
 
 			if (!result)
 			{
@@ -91,9 +113,11 @@ namespace WordlersAPI.Services
 			await userManager.UpdateAsync(user);
 			var token = await GenerateToken(user);
 
+			var userDto = _mapper.Map<UserDto>(user);
+
 			var loginResponse = new LoginResponseModel
 			{
-				User = user,	
+				User = userDto,	
 				Token = token,	
 			};
 

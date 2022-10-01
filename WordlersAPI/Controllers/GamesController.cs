@@ -25,14 +25,14 @@ namespace WordlersAPI.Controllers
         }
 
         [HttpGet("id")]
-        public async Task<IActionResult> GetGame(int id)
+        public async Task<IActionResult> GetGame(string id)
         {
             var game = await gameService.GetGame(id);
             return Ok(game);
         }
 
         [HttpGet("start/{id}")]
-        public async Task<IActionResult> StartGame(int id)
+        public async Task<IActionResult> StartGame(string id)
         {
             var game = await gameService.StartGameRound(id);
             return Ok(game);

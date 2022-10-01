@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace WordlersAPI.Migrations
 {
-    public partial class initialMigration : Migration
+    public partial class initialMigrationStringId2 : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -60,11 +60,10 @@ namespace WordlersAPI.Migrations
                 name: "Games",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     InRound = table.Column<bool>(type: "boolean", nullable: false),
                     Users = table.Column<List<int>>(type: "integer[]", nullable: true),
-                    RoomId = table.Column<int>(type: "integer", nullable: false),
+                    RoomId = table.Column<string>(type: "text", nullable: true),
                     RoundDuration = table.Column<int>(type: "integer", nullable: false),
                     TimeInBetweenRound = table.Column<int>(type: "integer", nullable: false)
                 },
@@ -185,19 +184,19 @@ namespace WordlersAPI.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    GameId = table.Column<int>(type: "integer", nullable: false),
-                    UserId = table.Column<int>(type: "integer", nullable: false),
-                    Point = table.Column<int>(type: "integer", nullable: false)
+                    GameId = table.Column<string>(type: "text", nullable: true),
+                    UserId = table.Column<string>(type: "text", nullable: true),
+                    Point = table.Column<int>(type: "integer", nullable: false),
+                    GameId1 = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_UserGamePoints", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_UserGamePoints_Games_GameId",
-                        column: x => x.GameId,
+                        name: "FK_UserGamePoints_Games_GameId1",
+                        column: x => x.GameId1,
                         principalTable: "Games",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateIndex(
@@ -238,9 +237,9 @@ namespace WordlersAPI.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserGamePoints_GameId",
+                name: "IX_UserGamePoints_GameId1",
                 table: "UserGamePoints",
-                column: "GameId");
+                column: "GameId1");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

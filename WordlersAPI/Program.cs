@@ -1,8 +1,11 @@
+using MessagePack;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using WordlersAPI.Data;
+using WordlersAPI.Hubs;
 using WordlersAPI.Interfaces;
+using WordlersAPI.Mapper;
 using WordlersAPI.Models.Core;
 using WordlersAPI.Models.Helper;
 using WordlersAPI.Services;
@@ -11,18 +14,21 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
+builder.Services.AddAutoMapper(typeof(WordlerMapping));
+builder.Services.AddSignalR()
+    .AddMessagePackProtocol();
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 //CORS
+
 builder.Services.AddCors(feature =>
     feature.AddPolicy(
         "CorsPolicy",
         apiPolicy => apiPolicy
-            //.AllowAnyOrigin()
-            //.WithOrigins("http://localhost:4200")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .SetIsOriginAllowed(host => true)
@@ -44,6 +50,7 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 
+builder.Services.AddScoped<IGameHubService, GameHubService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IWordEngineService, WordEngineService>();
 builder.Services.AddScoped<IGameService, GameService>();
@@ -74,6 +81,7 @@ builder.Services.AddSingleton<ICacheService, DistributedCacheService>();
 
 var app = builder.Build();
 
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -91,9 +99,12 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("CorsPolicy");
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<GameHub>("/gameHub");
 
 app.Run();

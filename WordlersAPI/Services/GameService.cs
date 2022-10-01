@@ -18,14 +18,17 @@ namespace WordlersAPI.Services
         private readonly GameDbContext context;
         private readonly IRabbitMQService rabbitMQService;
         private readonly IWordEngineService wordEngineService;
+        private readonly IGameHubService gameHubService;
 
-        public GameService(GameDbContext context, ILogger<GameService> logger, IRabbitMQService rabbitMQService, IWordEngineService wordEngineService, ICacheService cacheService)
+        public GameService(GameDbContext context, ILogger<GameService> logger, IRabbitMQService rabbitMQService, 
+            IWordEngineService wordEngineService, ICacheService cacheService, IGameHubService gameHubService)
         {
             this.logger = logger;
             this.cacheService = cacheService;
             this.context = context;
             this.rabbitMQService = rabbitMQService;
             this.wordEngineService = wordEngineService;
+            this.gameHubService = gameHubService;
 
 
         }
@@ -42,14 +45,14 @@ namespace WordlersAPI.Services
             return game;
         }
 
-        public async Task<Game> GetGame(int gameId)
+        public async Task<Game> GetGame(string gameId)
         {
-            return await context.Games.FirstOrDefaultAsync(x => x.Id == gameId);  
+            return await context.Games.FirstOrDefaultAsync(x => x.Id.ToString() == gameId);  
         }
 
-        public async Task<Game> StartGameRound(int gameId)
+        public async Task<Game> StartGameRound(string gameId)
         {
-            var game = await context.Games.FirstOrDefaultAsync(x => x.Id == gameId);  
+            var game = await context.Games.FirstOrDefaultAsync(x => x.Id.ToString() == gameId);  
             game.InRound = true;
 
             //Handle Produce Start Game Round to Queue
@@ -66,15 +69,15 @@ namespace WordlersAPI.Services
             return game;
         }
 
-        public async Task StopGameRound(int gameId)
+        public async Task StopGameRound(string gameId)
         {
-            var game = await context.Games.FirstOrDefaultAsync(x => x.Id == gameId);
+            var game = await context.Games.FirstOrDefaultAsync(x => x.Id.ToString() == gameId);
             game.InRound = false;
             await context.SaveChangesAsync();
             logger.LogInformation($"........................Game with id {gameId} has ended round");
         }
 
-        public async Task TimeGameRound(int gameId, int roundDuration)
+        public async Task TimeGameRound(string gameId, int roundDuration)
         {
             System.Timers.Timer timer = new System.Timers.Timer(roundDuration);
             //Handle Produce Stop Game Round to Queue
@@ -145,6 +148,7 @@ namespace WordlersAPI.Services
             await rabbitMQService.ProduceMessage(Constant.StoreUserGamePoint, jsonMessage);
 
             //New Pipeline, return success message (username: you have got 2 for the word "word")
+            await gameHubService.SendMessage(userGameInputModel.RoomId, Constant.WordlerBotName, $"{userGameInputModel.UserName}, You have been awarded {point} points for the word {userGameInputModel.UserWord}");
         }
 
         public async Task<bool> TestStore(string word)

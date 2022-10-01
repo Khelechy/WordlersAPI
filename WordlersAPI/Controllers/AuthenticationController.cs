@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using WordlersAPI.Interfaces;
 using WordlersAPI.Models.Request;
+using WordlersAPI.Models.Response;
 
 namespace WordlersAPI.Controllers
 {
@@ -17,6 +18,8 @@ namespace WordlersAPI.Controllers
         }
 
         [HttpPost("login")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GeneralResponse<LoginResponseModel>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(GeneralResponse))]
         public async Task<IActionResult> Login([FromBody] LoginRequestModel loginRequestModel)
         {
             var response = await authenticationService.LoginAsync(loginRequestModel);
@@ -28,7 +31,9 @@ namespace WordlersAPI.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Reister([FromBody] RegisterRequestModel registerRequestModel)
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GeneralResponse))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(GeneralResponse))]
+        public async Task<IActionResult> Register([FromBody] RegisterRequestModel registerRequestModel)
         {
             var response = await authenticationService.RegisterAsync(registerRequestModel);
             if (!response.IsSuccess)

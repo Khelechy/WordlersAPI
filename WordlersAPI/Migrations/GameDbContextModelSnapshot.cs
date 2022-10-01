@@ -157,17 +157,15 @@ namespace WordlersAPI.Migrations
 
             modelBuilder.Entity("WordlersAPI.Models.Core.Game", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<bool>("InRound")
                         .HasColumnType("boolean");
 
-                    b.Property<int>("RoomId")
-                        .HasColumnType("integer");
+                    b.Property<string>("RoomId")
+                        .HasColumnType("text");
 
                     b.Property<int>("RoundDuration")
                         .HasColumnType("integer");
@@ -275,18 +273,21 @@ namespace WordlersAPI.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("GameId")
-                        .HasColumnType("integer");
+                    b.Property<string>("GameId")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("GameId1")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Point")
                         .HasColumnType("integer");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GameId");
+                    b.HasIndex("GameId1");
 
                     b.ToTable("UserGamePoints");
                 });
@@ -346,9 +347,7 @@ namespace WordlersAPI.Migrations
                 {
                     b.HasOne("WordlersAPI.Models.Core.Game", null)
                         .WithMany("UserGamePoints")
-                        .HasForeignKey("GameId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("GameId1");
                 });
 
             modelBuilder.Entity("WordlersAPI.Models.Core.Game", b =>
