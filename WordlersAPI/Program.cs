@@ -56,6 +56,7 @@ builder.Services.AddScoped<IGameHubService, GameHubService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IWordEngineService, WordEngineService>();
 builder.Services.AddScoped<IGameService, GameService>();
+builder.Services.AddScoped<IUserGamePointService, UserGamePointService>();  
 builder.Services.AddScoped<IRabbitMQService, RabbitMQProducerService>();
 builder.Services.AddHostedService<RabbitMQConsumerService>();
 

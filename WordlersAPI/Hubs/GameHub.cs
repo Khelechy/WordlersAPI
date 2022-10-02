@@ -24,18 +24,19 @@ namespace WordlersAPI.Hubs
             await Clients.Group(message.RoomId).ReceiveMessage(user, message.MessageBody);
         }
 
-        public async Task SendUserInputRoomMessage(string user, string message)
+        public async Task SendUserInputRoomMessage(string user, MessageRequestModel message)
         {
-            var content = JsonConvert.DeserializeObject<MessageRequestModel>(message);
-            await Clients.Group(content.RoomId).ReceiveMessage(user, content.MessageBody);
+
+            await Clients.Group(message.RoomId).ReceiveMessage(user, message.MessageBody);
             //Proceed to User Game Input Logic
             var gameInputModel = new UserGameInputModel
             {
-                GameId = content.GameId,
-                OriginalWord = content.OriginalWord,
-                UserId = content.UserId,
-                UserName = content.UserName,
-                UserWord = content.MessageBody
+                GameId = message.GameId,
+                OriginalWord = message.OriginalWord,
+                UserId = message.UserId,
+                UserName = message.UserName,
+                UserWord = message.MessageBody,
+                RoomId = message.RoomId
             };
             await _gameService.UserGameInput(gameInputModel);
 
