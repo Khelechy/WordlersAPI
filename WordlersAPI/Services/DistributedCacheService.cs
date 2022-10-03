@@ -55,5 +55,10 @@ namespace WordlersAPI.Services
         {
             await _redis.KeyDeleteAsync(key); 
         }
+
+        public async Task<long> GetCounter(string key)
+        {
+           return await _redis.HashIncrementAsync(key, "counter", 1);
+        }
     }
 }

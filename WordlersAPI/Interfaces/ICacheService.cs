@@ -7,6 +7,8 @@
 
         Task<bool> AddToStore(string key, string value);  
         Task<bool> IsStoreContains(string key, string value);
+
+        Task<long> GetCounter(string key);   
         Task ClearStore(string key);
     }
 }

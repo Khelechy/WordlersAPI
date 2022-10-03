@@ -38,7 +38,9 @@ namespace WordlersAPI.Services
             {
                 Users = createGameRequest.Users,
                 RoomId = createGameRequest.RoomId,
-                RoundDuration = 60000
+                RoundDuration = 60000,
+                TimeInBetweenRound = 20000,
+                NumberOfRounds = Constant.MaxNumberOfRounds
             };
             await context.Games.AddAsync(game);    
             await context.SaveChangesAsync();
@@ -50,7 +52,7 @@ namespace WordlersAPI.Services
             return await context.Games.FirstOrDefaultAsync(x => x.Id.ToString() == gameId);  
         }
 
-        public async Task<Game> StartGameRound(string gameId)
+        public async Task<Game> StartGameRound(string gameId, string roomId)
         {
             var game = await context.Games.FirstOrDefaultAsync(x => x.Id.ToString() == gameId);  
             game.InRound = true;
@@ -59,22 +61,63 @@ namespace WordlersAPI.Services
             var gameMessage = new GameBrokerModel
             {
                 GameId = gameId,
-                RoundDuration = game.RoundDuration
+                RoundDuration = game.RoundDuration,
+                RoomId = roomId   
+               
             };
             var jsonMessage = JsonConvert.SerializeObject(gameMessage);
             await rabbitMQService.ProduceMessage(Constant.StartGameRoundTopic, jsonMessage);
             //End
             logger.LogInformation($".....................Game with id {gameId} has started round");
             await context.SaveChangesAsync();
+            //Send Round Start Event
+            await gameHubService.SendRoundStatus(roomId, true);
+            //
+            await gameHubService.SendMessage(roomId, Constant.WordlerBotName, $"Game round has started");
+
             return game;
         }
 
-        public async Task StopGameRound(string gameId)
+        public async Task StopGameRound(string gameId, string roomId)
         {
             var game = await context.Games.FirstOrDefaultAsync(x => x.Id.ToString() == gameId);
             game.InRound = false;
             await context.SaveChangesAsync();
+            //Send Round End Event
+            await gameHubService.SendRoundStatus(roomId, false);
+            //
+            await gameHubService.SendMessage(roomId, Constant.WordlerBotName, $"This round has ended");
             logger.LogInformation($"........................Game with id {gameId} has ended round");
+
+            //check If there are more rounds
+            //Create a buffer time to inform the users
+            //Trigger a new StartGame round session
+            var counter = await cacheService.GetCounter(Constant.GameStoreName + gameId);
+            if(counter !> game.NumberOfRounds)
+            {
+                await gameHubService.SendMessage(roomId, Constant.WordlerBotName, $"The next round will begin soon");
+                await TimeInBetweenRound(gameId, game.TimeInBetweenRound);
+            }
+
+        }
+
+        public async Task TimeInBetweenRound(string gameId, int roundDuration)
+        {
+            System.Timers.Timer timer = new System.Timers.Timer(roundDuration);
+            //Handle Produce start new Game Round to Queue
+            var gameMessage = new GameBrokerModel
+            {
+                GameId = gameId,
+                RoundDuration = roundDuration,  
+            };
+            var jsonMessage = JsonConvert.SerializeObject(gameMessage);
+            timer.AutoReset = false;
+            timer.Elapsed += async (sender, e) =>
+            {
+                timer.Dispose();
+                await rabbitMQService.ProduceMessage(Constant.StartGameRoundTopic, jsonMessage);
+            };
+            timer.Start();
         }
 
         public async Task TimeGameRound(string gameId, int roundDuration)
@@ -122,7 +165,7 @@ namespace WordlersAPI.Services
             }
 
             //Check other users has not sent in word
-            var isExist = await cacheService.IsStoreContains(Constant.GameStoreName + userGameInputModel.GameId.ToString(), anagramRequest.NewWord);
+            var isExist = await cacheService.IsStoreContains(Constant.GameStoreName + userGameInputModel.GameId, anagramRequest.NewWord);
             if (isExist)
             {
                 //Ignore or prompt has already been sent
@@ -130,7 +173,7 @@ namespace WordlersAPI.Services
             }
             else
             {
-                await cacheService.AddToStore(Constant.GameStoreName + userGameInputModel.GameId.ToString(), anagramRequest.NewWord);
+                await cacheService.AddToStore(Constant.GameStoreName + userGameInputModel.GameId, anagramRequest.NewWord);
             }
 
 

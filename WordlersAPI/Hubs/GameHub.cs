@@ -19,6 +19,11 @@ namespace WordlersAPI.Hubs
             await Clients.All.ReceiveMessage(user, message);
         }
 
+        public async Task SendRoundStatus(string roomId, bool status)
+        {
+            await Clients.Group(roomId).ReceiveRoundStatus(status);
+        }
+
         public async Task SendRoomMessage(string user, MessageRequestModel message)
         {
             await Clients.Group(message.RoomId).ReceiveMessage(user, message.MessageBody);

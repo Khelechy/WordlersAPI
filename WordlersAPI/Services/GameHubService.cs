@@ -18,5 +18,10 @@ namespace WordlersAPI.Services
         {
            await _gameHub.Clients.Group(roomId).SendAsync("ReceiveMessage", user, message);
         }
+
+        public async Task SendRoundStatus(string roomId, bool status)
+        {
+            await _gameHub.Clients.Group(roomId).SendAsync("ReceiveRoundStatus", status);   
+        }
     }
 }

@@ -51,8 +51,8 @@ namespace WordlersAPI.Services
             try
             {
                 await ConsumeIncrementRoomUsersCountTopic(Constant.IncrementRoomUsersCount);
-                await ConsumeStartGameTopic(Constant.StartGameRoundTopic);
-                await ConsumeStopGameTopic(Constant.StopGameRoundTopic);
+                await ConsumeStartGameRoundTopic(Constant.StartGameRoundTopic);
+                await ConsumeStopGameRoundTopic(Constant.StopGameRoundTopic);
                 await ConsumeUserGamePoint(Constant.StoreUserGamePoint);    
 
 
@@ -103,7 +103,7 @@ namespace WordlersAPI.Services
 
         }
 
-        private async Task ConsumeStartGameTopic(string topic)
+        private async Task ConsumeStartGameRoundTopic(string topic)
         {
 
             channel.QueueDeclare(topic, durable: true, exclusive: false, autoDelete: false, arguments: null);
@@ -143,7 +143,7 @@ namespace WordlersAPI.Services
 
         }
 
-        private async Task ConsumeStopGameTopic(string topic)
+        private async Task ConsumeStopGameRoundTopic(string topic)
         {
 
             channel.QueueDeclare(topic, durable: true, exclusive: false, autoDelete: false, arguments: null);
@@ -167,7 +167,7 @@ namespace WordlersAPI.Services
                     using (var scope = _serviceProvider.CreateScope())
                     {
                         var gameService = scope.ServiceProvider.GetService<IGameService>();
-                        await gameService.StopGameRound(response.GameId);
+                        await gameService.StopGameRound(response.GameId, response.RoomId);
                     }
 
                     channel.BasicAck(ea.DeliveryTag, false);

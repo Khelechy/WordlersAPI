@@ -31,10 +31,10 @@ namespace WordlersAPI.Controllers
             return Ok(game);
         }
 
-        [HttpGet("start/{id}")]
-        public async Task<IActionResult> StartGame(string id)
+        [HttpGet("start")]
+        public async Task<IActionResult> StartGame([FromBody] StartGameRequest startGameRequest)
         {
-            var game = await gameService.StartGameRound(id);
+            var game = await gameService.StartGameRound(startGameRequest.GameId, startGameRequest.RoomId);
             return Ok(game);
         }
 
