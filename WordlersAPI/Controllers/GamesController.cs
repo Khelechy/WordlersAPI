@@ -31,7 +31,7 @@ namespace WordlersAPI.Controllers
             return Ok(game);
         }
 
-        [HttpGet("start")]
+        [HttpPost("start")]
         public async Task<IActionResult> StartGame([FromBody] StartGameRequest startGameRequest)
         {
             var game = await gameService.StartGameRound(startGameRequest.GameId, startGameRequest.RoomId);

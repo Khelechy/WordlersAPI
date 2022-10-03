@@ -53,6 +53,7 @@ namespace WordlersAPI.Services
                 await ConsumeIncrementRoomUsersCountTopic(Constant.IncrementRoomUsersCount);
                 await ConsumeStartGameRoundTopic(Constant.StartGameRoundTopic);
                 await ConsumeStopGameRoundTopic(Constant.StopGameRoundTopic);
+                await ConsumeStartNewGameRoundTopic(Constant.StartNewGameRoundTopic);
                 await ConsumeUserGamePoint(Constant.StoreUserGamePoint);    
 
 
@@ -103,6 +104,45 @@ namespace WordlersAPI.Services
 
         }
 
+        private async Task ConsumeStartNewGameRoundTopic(string topic)
+        {
+
+            channel.QueueDeclare(topic, durable: true, exclusive: false, autoDelete: false, arguments: null);
+            var consumer = new EventingBasicConsumer(channel);
+            consumer.Received += async (model, ea) =>
+            {
+                try
+                {
+                    var body = ea.Body.ToArray();
+                    var message = Encoding.UTF8.GetString(body);
+
+                    logger.LogInformation($"Receieved message on new start round topic ");
+
+                    if (String.IsNullOrEmpty(message))
+                    {
+                        logger.LogInformation("Received empty message body");
+                        return;
+                    }
+
+                    var response = JsonConvert.DeserializeObject<GameBrokerModel>(message);
+                    using (var scope = _serviceProvider.CreateScope())
+                    {
+                        var gameService = scope.ServiceProvider.GetService<IGameService>();
+                        await gameService.StartGameRound(response.GameId, response.RoomId);
+                    }
+
+                    channel.BasicAck(ea.DeliveryTag, false);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError($"Error from consuming start new game round topic : {ex.Message} ");
+                }
+            };
+            channel.BasicConsume(topic, autoAck: false, consumer);
+            logger.LogInformation($".. Listening for messages on {topic} topic ");
+
+        }
+
         private async Task ConsumeStartGameRoundTopic(string topic)
         {
 
@@ -128,7 +168,7 @@ namespace WordlersAPI.Services
                     {
                         var gameService = scope.ServiceProvider.GetService<IGameService>();
                         var timeInMilliseconds = response.RoundDuration;
-                        await gameService.TimeGameRound(response.GameId, timeInMilliseconds);
+                        await gameService.TimeGameRound(response.GameId, response.RoomId, timeInMilliseconds);
                     }
 
                     channel.BasicAck(ea.DeliveryTag, false);

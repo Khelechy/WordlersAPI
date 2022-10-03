@@ -92,41 +92,42 @@ namespace WordlersAPI.Services
             //check If there are more rounds
             //Create a buffer time to inform the users
             //Trigger a new StartGame round session
-            var counter = await cacheService.GetCounter(Constant.GameStoreName + gameId);
-            if(counter !> game.NumberOfRounds)
+            var counter = await cacheService.GetCounter(Constant.GameCounterName + gameId);
+            if(counter < game.NumberOfRounds)
             {
                 await gameHubService.SendMessage(roomId, Constant.WordlerBotName, $"The next round will begin soon");
-                await TimeInBetweenRound(gameId, game.TimeInBetweenRound);
+                await TimeInBetweenRound(gameId, roomId, game.TimeInBetweenRound);
             }
 
         }
 
-        public async Task TimeInBetweenRound(string gameId, int roundDuration)
+        public async Task TimeInBetweenRound(string gameId, string roomId, int roundDuration)
         {
             System.Timers.Timer timer = new System.Timers.Timer(roundDuration);
-            //Handle Produce start new Game Round to Queue
+            //Handle Produce Stop Game Round to Queue
             var gameMessage = new GameBrokerModel
             {
                 GameId = gameId,
-                RoundDuration = roundDuration,  
+                RoomId = roomId,
             };
             var jsonMessage = JsonConvert.SerializeObject(gameMessage);
             timer.AutoReset = false;
             timer.Elapsed += async (sender, e) =>
             {
                 timer.Dispose();
-                await rabbitMQService.ProduceMessage(Constant.StartGameRoundTopic, jsonMessage);
+                await rabbitMQService.ProduceMessage(Constant.StartNewGameRoundTopic, jsonMessage);
             };
             timer.Start();
         }
 
-        public async Task TimeGameRound(string gameId, int roundDuration)
+        public async Task TimeGameRound(string gameId, string roomId, int roundDuration)
         {
             System.Timers.Timer timer = new System.Timers.Timer(roundDuration);
             //Handle Produce Stop Game Round to Queue
             var gameMessage = new GameBrokerModel
             {
-                GameId = gameId
+                GameId = gameId,
+                RoomId = roomId,
             };
             var jsonMessage = JsonConvert.SerializeObject(gameMessage);
             timer.AutoReset = false;

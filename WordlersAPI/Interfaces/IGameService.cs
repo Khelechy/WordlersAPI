@@ -7,7 +7,7 @@ namespace WordlersAPI.Interfaces
     {
         Task<Game> GetGame(string gameId);
         Task<Game> CreateGame(CreateGameRequestModel createGameRequest);
-        Task TimeGameRound(string gameId, int roundDuration);
+        Task TimeGameRound(string gameId, string roomId, int roundDuration);
         Task<Game> StartGameRound(string gameId, string roomId);
         Task StopGameRound(string gameId, string roomId);
 
